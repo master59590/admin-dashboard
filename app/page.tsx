@@ -7,7 +7,7 @@ export default function Home() {
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-3xl font-bold">Products</h1>
-          <p className="text-muted-foreground">View all your products from Firebase</p>
+          <p className="text-muted-foreground">View all products</p>
         </div>
         <ProductList />
       </div>

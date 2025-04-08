@@ -6,8 +6,8 @@ export default function UploadPage() {
     <DashboardLayout>
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-3xl font-bold">Upload Product</h1>
-          <p className="text-muted-foreground">Add a new product to your Firebase database</p>
+          <h1 className="text-3xl font-bold">Upload Product Promotion</h1>
+          <p className="text-muted-foreground">Add a new product promotion</p>
         </div>
         <UploadForm />
       </div>

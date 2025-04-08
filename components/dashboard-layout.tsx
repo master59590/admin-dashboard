@@ -4,7 +4,7 @@ import type React from "react"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Upload } from "lucide-react"
+import { Home, Upload, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface DashboardLayoutProps {
@@ -16,14 +16,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const navItems = [
     {
-      title: "Dashboard",
+      title: "Products Promotion",
       href: "/",
       icon: Home,
     },
     {
-      title: "Upload",
+      title: "Upload Product Promotion",
       href: "/upload",
       icon: Upload,
+    },
+    {
+      title: "Users",
+      href: "/users",
+      icon: Users,
     },
   ]
 
@@ -32,7 +37,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <header className="sticky top-0 z-10 border-b bg-background">
         <div className="container flex h-16 items-center justify-between py-4">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold ml-6">Ecos Admin Dashboard</h1>
+          <h1 className="text-xl font-bold ml-6">Ecos Admin Dashboard</h1>
           </div>
         </div>
       </header>
