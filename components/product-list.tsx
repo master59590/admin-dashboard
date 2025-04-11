@@ -50,6 +50,7 @@ export function ProductList() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null)
   const [editedName, setEditedName] = useState("")
   const [editedPrice, setEditedPrice] = useState("")
+  const [editStock, setEditStock] = useState("")
   const [editedDescription, setEditedDescription] = useState("")
   const [newImage, setNewImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -85,9 +86,11 @@ export function ProductList() {
   }
 
   const handleEditClick = (product: Product) => {
+    
     setProductToEdit(product)
     setEditedName(product.name)
     setEditedPrice(product.price.toString())
+    setEditStock(product.stock.toString())
     setEditedDescription(product.description || "")
     setImagePreview(product.imageUrl)
     setEditDialogOpen(true)
@@ -176,6 +179,15 @@ export function ProductList() {
       return
     }
 
+    if (!editStock.trim() || isNaN(Number(editStock))) {
+      toast({
+        title: "Invalid stock",
+        description: "Please enter a valid stock",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       setIsSubmitting(true)
 
@@ -209,6 +221,7 @@ export function ProductList() {
       await updateDoc(productRef, {
         name: editedName,
         price: Number(editedPrice),
+        stock: Number(editStock),
         description: editedDescription,
         imageUrl: updatedImageUrl,
         updatedAt: new Date(),
@@ -221,6 +234,7 @@ export function ProductList() {
               ...p,
               name: editedName,
               price: Number(editedPrice),
+              stock: Number(editStock),
               description: editedDescription,
               imageUrl: updatedImageUrl,
             }
@@ -295,6 +309,7 @@ export function ProductList() {
                 <div>
                   <h3 className="font-medium">{product.name}</h3>
                   <p className="text-muted-foreground">${product.price.toFixed(2)}</p>
+                  <p className="text-muted-foreground">${product.stock.toFixed(2)}</p>
                 </div>
                 <div className="flex space-x-1">
                   <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEditClick(product)}>
@@ -379,6 +394,20 @@ export function ProductList() {
                 min="0"
                 value={editedPrice}
                 onChange={(e) => setEditedPrice(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="stock" className="text-right">
+                Stock
+              </label>
+              <Input
+                id="stock"
+                type="number"
+                step="0.01"
+                min="0"
+                value={editStock}
+                onChange={(e) => setEditStock(e.target.value)}
                 className="col-span-3"
               />
             </div>

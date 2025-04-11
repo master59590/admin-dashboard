@@ -48,7 +48,7 @@ export function UserTable() {
   const [hasMore, setHasMore] = useState(true)
   const [hasPrevious, setHasPrevious] = useState(false)
   const usersPerPage = 10
-
+  const [pageCursors, setPageCursors] = useState<any[]>([]) // เก็บเอกสารสุดท้ายของแต่ละหน้า
   // Edit and view state
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
@@ -67,121 +67,75 @@ export function UserTable() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
-  // Store page cursors for navigation
-  const [pageCursors, setPageCursors] = useState<any[]>([null])
+  // Store the last document for pagination
+  const [lastVisibleDoc, setLastVisibleDoc] = useState<any>(null)
+  const [firstPage, setFirstPage] = useState<User[]>([])
 
-  const fetchUsers = async (direction: "next" | "prev" = "next") => {
+  const fetchUsers = async (pageNum: number) => {
     try {
       setLoading(true)
       const usersCollection = collection(db, "user_id")
       let userQuery
-
-      if (direction === "next") {
-        // Get next page
-        const cursor = pageCursors[page - 1]
-        userQuery = cursor
-          ? query(usersCollection, orderBy("createdAt", "desc"), startAfter(cursor), limit(usersPerPage))
-          : query(usersCollection, orderBy("createdAt", "desc"), limit(usersPerPage))
-
-        const userSnapshot = await getDocs(userQuery)
-
-        if (!userSnapshot.empty) {
-          // Store the last document as cursor for the next page
-          const lastDoc = userSnapshot.docs[userSnapshot.docs.length - 1]
-
-          // Update page cursors array
-          if (page >= pageCursors.length) {
-            setPageCursors([...pageCursors, lastDoc])
-          } else {
-            const newCursors = [...pageCursors]
-            newCursors[page] = lastDoc
-            setPageCursors(newCursors.slice(0, page + 1))
-          }
-
-          processUserData(userSnapshot)
-          setHasMore(userSnapshot.size === usersPerPage)
-          setHasPrevious(page > 1)
-        } else {
-          setHasMore(false)
-        }
+  
+      if (pageNum === 1) {
+        userQuery = query(usersCollection, orderBy("createdAt", "desc"), limit(usersPerPage))
       } else {
-        // Get previous page
-        if (page > 1) {
-          // Use the cursor from the previous page
-          const cursor = pageCursors[page - 2] // -2 because we're going back
-
-          if (cursor === null) {
-            // First page
-            userQuery = query(usersCollection, orderBy("createdAt", "desc"), limit(usersPerPage))
-          } else {
-            // Use the cursor to get documents before it
-            userQuery = query(usersCollection, orderBy("createdAt", "desc"), startAfter(cursor), limit(usersPerPage))
-          }
-
-          const userSnapshot = await getDocs(userQuery)
-
-          if (!userSnapshot.empty) {
-            processUserData(userSnapshot)
-            setHasMore(true)
-            setHasPrevious(page - 1 > 1)
-          }
-        }
+        const previousCursor = pageCursors[pageNum - 2]
+        if (!previousCursor) return
+  
+        userQuery = query(
+          usersCollection,
+          orderBy("createdAt", "desc"),
+          startAfter(previousCursor),
+          limit(usersPerPage)
+        )
       }
+  
+      const userSnapshot = await getDocs(userQuery)
+      if (userSnapshot.empty) {
+        setHasMore(false)
+        return
+      }
+  
+      const userList = userSnapshot.docs.map((doc) => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          name: data.name || "N/A",
+          email: data.email || "N/A",
+          department_id: String(data.department_id || "N/A"),
+          firebase_uid: data.firebase_uid || "N/A",
+          user_point: data.user_point || 0,
+          createdAt: data.createdAt instanceof Date ? data.createdAt : data.createdAt?.toDate() || new Date(),
+          update_at: data.update_at instanceof Date ? data.update_at : data.update_at?.toDate() || new Date(),
+        }
+      })
+  
+      // เพิ่ม cursor สำหรับหน้าใหม่ ถ้าเป็นหน้าแรกไม่ต้องเพิ่ม
+      if (pageNum === 1) {
+        setPageCursors([userSnapshot.docs[userSnapshot.docs.length - 1]])
+      } else {
+        setPageCursors((prev) => {
+          const newCursors = [...prev]
+          newCursors[pageNum - 1] = userSnapshot.docs[userSnapshot.docs.length - 1]
+          return newCursors
+        })
+      }
+  
+      setUsers(userList)
+      setFilteredUsers(userList)
+      setHasPrevious(pageNum > 1)
+      setHasMore(userSnapshot.size === usersPerPage)
     } catch (error) {
       console.error("Error fetching users:", error)
     } finally {
       setLoading(false)
     }
   }
+  
 
-  const processUserData = (snapshot: any) => {
-    const userList = snapshot.docs.map((doc: any) => {
-      const data = doc.data()
-      return {
-        id: doc.id,
-        name: data.name || "N/A",
-        email: data.email || "N/A",
-        department_id: String(data.department_id || "N/A"), // Ensure department_id is a string
-        firebase_uid: data.firebase_uid || "N/A",
-        user_point: data.user_point || 0,
-        createdAt: data.createdAt instanceof Date ? data.createdAt : data.createdAt?.toDate() || new Date(),
-        update_at: data.update_at instanceof Date ? data.update_at : data.update_at?.toDate() || new Date(),
-      }
-    })
-
-    setUsers(userList)
-    setFilteredUsers(userList)
-  }
-
-  // Initial data fetch
   useEffect(() => {
-    const initialFetch = async () => {
-      try {
-        setLoading(true)
-        const usersCollection = collection(db, "user_id")
-        const userQuery = query(usersCollection, orderBy("createdAt", "desc"), limit(usersPerPage))
-
-        const userSnapshot = await getDocs(userQuery)
-
-        if (!userSnapshot.empty) {
-          // Store the last document as cursor for the next page
-          const lastDoc = userSnapshot.docs[userSnapshot.docs.length - 1]
-          setPageCursors([null, lastDoc]) // null for first page, lastDoc for second page
-
-          processUserData(userSnapshot)
-          setHasMore(userSnapshot.size === usersPerPage)
-          setHasPrevious(false) // First page has no previous
-        } else {
-          setHasMore(false)
-        }
-      } catch (error) {
-        console.error("Error in initial fetch:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    initialFetch()
+    fetchUsers(1)
   }, [])
 
   useEffect(() => {
@@ -192,25 +146,57 @@ export function UserTable() {
         (user) =>
           (user.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
           (user.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          String(user.department_id || "").includes(searchTerm), // Convert to string and handle null/undefined
+          String(user.department_id || "").includes(searchTerm),
       )
       setFilteredUsers(filtered)
     }
   }, [searchTerm, users])
-
+  
   const handleNextPage = () => {
-    if (hasMore) {
-      setPage((prev) => prev + 1)
-      fetchUsers("next")
+    if (hasMore && !loading) {
+      const nextPage = page + 1
+      setPage(nextPage)
+      fetchUsers(nextPage)
     }
   }
-
+  
   const handlePrevPage = () => {
-    if (page > 1) {
-      setPage((prev) => prev - 1)
-      fetchUsers("prev")
+    if (page > 1 && !loading) {
+      const prevPage = page - 1
+      setPage(prevPage)
+      fetchUsers(prevPage)
     }
   }
+  
+  // const handleNextPage = () => {
+    
+  //   if (hasMore && !loading) {
+  //     const nextPage = page + 1
+  //     setPage((prev) => prev + 1)
+  //     fetchUsers(nextPage)
+  //   }
+  // }
+
+  // const handlePrevPage = () => {
+  //   if (page > 1 && !loading) {
+  //     const prevPage = page - 1
+  //     setPage(prevPage)
+
+  //     if (prevPage === 1) {
+  //       // Use cached first page
+  //       setUsers(firstPage)
+  //       setFilteredUsers(firstPage)
+  //       setHasPrevious(false)
+  //       setHasMore(true)
+  //     } else {
+  //       // Need to implement fetching previous pages
+  //       // This would require storing cursors for each page
+  //       // For simplicity, we'll just go back to page 1
+  //       setPage(prevPage)
+  //       fetchUsers(1)
+  //     }
+  //   }
+  // }
 
   const handleEditClick = (user: User) => {
     setSelectedUser(user)
@@ -425,8 +411,17 @@ export function UserTable() {
             Previous
           </Button>
           <Button variant="outline" size="sm" onClick={handleNextPage} disabled={!hasMore || loading}>
-            Next
-            <ChevronRight className="h-4 w-4 ml-1" />
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </>
+            )}
           </Button>
         </div>
       </div>
