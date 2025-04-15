@@ -43,6 +43,7 @@ export default function LoginPage() {
           description: error,
           variant: "destructive",
         })
+        
         return
       }
 
@@ -66,7 +67,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+    <div className="flex min-h-screen items-center justify-center bg-black p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Login</CardTitle>
@@ -88,9 +89,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
-                  Forgot password?
-                </Link>
+                
               </div>
               <Input
                 id="password"
@@ -113,12 +112,7 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col">
-          <div className="text-sm text-center mt-2">
-            Don't have an account?{" "}
-            <Link href="/register" className="text-blue-600 hover:text-blue-800">
-              Register
-            </Link>
-          </div>
+          
         </CardFooter>
       </Card>
     </div>

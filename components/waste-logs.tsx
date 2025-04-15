@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { collection, query, orderBy, limit, getDocs, startAfter, Timestamp } from "firebase/firestore"
+import { collection, query, orderBy, limit, getDocs, startAfter, Timestamp ,doc ,getDoc} from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -66,24 +66,32 @@ export function WasteLogs() {
       // Set the last document for pagination
       setLastVisible(logsSnapshot.docs[logsSnapshot.docs.length - 1])
 
-      const logsList = logsSnapshot.docs.map((doc) => {
-        const data = doc.data()
-        return {
-          id: doc.id,
-          waste_type: data.waste_type || "unknown",
-          timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate() : new Date(),
-          user_id: data.user_id || "",
-          garbage_type_sensor: data.garbage_type_sensor || false,
-          location: data.location || "Main Facility",
-          bin_id: data.bin_id || "BIN-" + Math.floor(Math.random() * 1000),
-          confidence: data.confidence || Math.floor(Math.random() * 30) + 70,
-          status: data.status || ["Analyzed", "Collected", "Pending"][Math.floor(Math.random() * 3)],
-        }
-      })
-
+      const logsList = await Promise.all(
+        logsSnapshot.docs.map(async (docData) => {
+          const data = docData.data()
+          const wasteTypeId = data.waste_type
+      
+          // ดึงข้อมูล waste_type จาก collection waste_type
+          const wasteTypeRef = doc(db, 'waste_type', wasteTypeId)
+          const wasteTypeSnap = await getDoc(wasteTypeRef)
+          const wasteTypeInfo = wasteTypeSnap.exists() ? wasteTypeSnap.data() : {}
+      
+          return {
+            id: docData.id,
+            waste_type: wasteTypeInfo.waste_type || "unknown", // หรือใช้ waste_name ถ้าต้องการ
+            timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate() : new Date(),
+            user_id: data.user_id || "",
+            location: wasteTypeInfo.waste_name || "unknown",
+            garbage_type_sensor: data.garbage_type_sensor || false,
+            bin_id: data.bin_id || "BIN-" + Math.floor(Math.random() * 1000),
+          }
+        })
+      )
+      
       setLogs(logsList)
       setFilteredLogs(logsList)
       setHasMore(logsSnapshot.size === logsPerPage)
+      
     } catch (error) {
       console.error("Error fetching waste logs:", error)
     } finally {
@@ -206,10 +214,8 @@ export function WasteLogs() {
                   <TableHead>Timestamp</TableHead>
                   <TableHead>Waste Type</TableHead>
                   <TableHead>User ID</TableHead>
-                  <TableHead>Location</TableHead>
+                  <TableHead>Waste Name</TableHead>
                   <TableHead>Bin ID</TableHead>
-                  <TableHead>AI Confidence</TableHead>
-                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -227,8 +233,7 @@ export function WasteLogs() {
                       <TableCell>{log.user_id}</TableCell>
                       <TableCell>{log.location}</TableCell>
                       <TableCell>{log.bin_id}</TableCell>
-                      <TableCell>{log.confidence}%</TableCell>
-                      <TableCell>{getStatusBadge(log.status || "Unknown")}</TableCell>
+                      
                     </TableRow>
                   ))
                 )}

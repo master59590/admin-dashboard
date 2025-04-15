@@ -22,12 +22,18 @@ import {
   ResponsiveContainer,
 } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { set } from "date-fns"
 
 interface WasteData {
   id: string
   waste_type: string
   timestamp: Date
   user_id: string
+}
+
+interface WasteType {
+  id: string
+  waste_type: string
 }
 
 interface WasteSummaryData {
@@ -46,6 +52,7 @@ interface WasteSummaryData {
   dailyData: any[]
   weeklyData: any[]
   monthlyData: any[]
+  yearlyData: any[]
 }
 
 const WASTE_TYPES: Record<string, string> = {
@@ -62,6 +69,10 @@ const COLORS = ["#4ade80", "#60a5fa", "#f97316", "#f43f5e", "#a78bfa", "#facc15"
 
 export function WasteSummary() {
   const [loading, setLoading] = useState(true)
+  const [organic, setOrganic] = useState<number>(0)
+  const [recyclable, setRecyclable] = useState<number>(0)
+  const [general, setGeneral] = useState<number>(0)
+  const [hazardous, setHazardous] = useState<number>(0)
   const [summaryData, setSummaryData] = useState<WasteSummaryData>({
     totalWaste: 0,
     wasteByType: {
@@ -78,8 +89,9 @@ export function WasteSummary() {
     dailyData: [],
     weeklyData: [],
     monthlyData: [],
+    yearlyData: [],
   })
-  const [timeRange, setTimeRange] = useState<"daily" | "weekly" | "monthly">("daily")
+  const [timeRange, setTimeRange] = useState<"daily" | "weekly" | "monthly" | "yearly">("daily")
 
   useEffect(() => {
     async function fetchWasteData() {
@@ -95,6 +107,7 @@ export function WasteSummary() {
 
         const wasteData: WasteData[] = wasteSnapshot.docs.map((doc) => {
           const data = doc.data()
+                
           return {
             id: doc.id,
             waste_type: data.waste_type || "unknown",
@@ -103,19 +116,77 @@ export function WasteSummary() {
           }
         })
 
+        const wasteCollectionWasteType = collection(db, "waste_type")
+        const wasteSnapshotWasteType = await getDocs(wasteCollectionWasteType)
+
+        if (wasteSnapshotWasteType.empty) {
+          setLoading(false)
+          return
+        }
+
+        const wasteType: WasteType[] = wasteSnapshotWasteType.docs.map((doc) => {
+          const data = doc.data()
+                
+          return {
+            id: doc.id,
+            waste_type: data.waste_type || "unknown",
+          }
+        })
+        
+
         // Process data for summary
         const now = new Date()
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
         const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
         const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
+        const summary = wasteData.map((type) => {
+
+
+          return {
+            id: type.id,
+            waste_type: type.waste_type,
+            count: wasteData.filter((w) => w.waste_type === type.id).length
+          }
+        })
+
+        let tempOrganic = 0
+        let tempRecyclable = 0
+        let tempGeneral = 0
+        let tempHazardous = 0
+        
+
+        const summaryType = wasteType.map((type) => {
+          var  id = type.id
+          var  name =  type.waste_type
+          const filterType = summary.filter((w) => w.waste_type === id).length
+           if (name === "hazardous waste") {
+            tempHazardous += filterType
+          } else if (name === "organic waste") {
+            tempOrganic += filterType
+          } else if (name === "recyclable waste") {
+            tempRecyclable += filterType
+          } else if (name === "general waste") {
+            tempGeneral += filterType
+          }
+          
+          console.log("Summary:")
+          return {
+            id: id,
+            filterType: filterType,
+            Typename: name,
+          }
+        })
+
         // Count by waste type
         const wasteByType = {
-          organic: wasteData.filter((w) => w.waste_type === "00001").length,
-          recyclable: wasteData.filter((w) => w.waste_type === "00002").length,
-          general: wasteData.filter((w) => w.waste_type === "00003").length,
-          hazardous: wasteData.filter((w) => w.waste_type === "00004").length,
+          organic: tempOrganic,
+          recyclable: tempRecyclable,
+          general: tempGeneral,
+          hazardous: tempHazardous,
         }
+
+        // console.log("Waste by type:", wasteType[0].id)
 
         // Count by disposal method
         const wasteByDisposal = {
@@ -133,15 +204,42 @@ export function WasteSummary() {
           hourEnd.setHours(hourStart.getHours() + 1)
 
           const hourData = wasteData.filter((w) => w.timestamp >= hourStart && w.timestamp < hourEnd)
+          
+          let tempOrganic = 0
+          let tempRecyclable = 0
+          let tempGeneral = 0
+          let tempHazardous = 0
+          
+          const summaryType = wasteType.map((type) => {
+            var  id = type.id
+            var  name =  type.waste_type
+            const filterType = hourData.filter((w) => w.waste_type === id).length
+             if (name === "hazardous waste") {
+              tempHazardous += filterType
+            } else if (name === "organic waste") {
+              tempOrganic += filterType
+            } else if (name === "recyclable waste") {
+              tempRecyclable += filterType
+            } else if (name === "general waste") {
+              tempGeneral += filterType
+            }
+            
+            console.log("Summary:")
+            return {
+              id: id,
+              filterType: filterType,
+              Typename: name,
+            }
+          })
 
           dailyData.push({
             hour: hourStart.getHours(),
             time: `${hourStart.getHours()}:00`,
             total: hourData.length,
-            organic: hourData.filter((w) => w.waste_type === "00001").length,
-            recyclable: hourData.filter((w) => w.waste_type === "00002").length,
-            general: hourData.filter((w) => w.waste_type === "00003").length,
-            hazardous: hourData.filter((w) => w.waste_type === "00004").length,
+            organic: tempOrganic,
+            recyclable: tempRecyclable,
+            general: tempGeneral,
+            hazardous: tempHazardous,
           })
         }
 
@@ -156,13 +254,40 @@ export function WasteSummary() {
 
           const dayData = wasteData.filter((w) => w.timestamp >= dayStart && w.timestamp <= dayEnd)
 
+          let tempOrganic = 0
+          let tempRecyclable = 0
+          let tempGeneral = 0
+          let tempHazardous = 0
+          
+          const summaryType = wasteType.map((type) => {
+            var  id = type.id
+            var  name =  type.waste_type
+            const filterType = dayData.filter((w) => w.waste_type === id).length
+             if (name === "hazardous waste") {
+              tempHazardous += filterType
+            } else if (name === "organic waste") {
+              tempOrganic += filterType
+            } else if (name === "recyclable waste") {
+              tempRecyclable += filterType
+            } else if (name === "general waste") {
+              tempGeneral += filterType
+            }
+            
+            console.log("Summary:")
+            return {
+              id: id,
+              filterType: filterType,
+              Typename: name,
+            }
+          })
+
           weeklyData.push({
             date: dayStart.toLocaleDateString("en-US", { weekday: "short" }),
             total: dayData.length,
-            organic: dayData.filter((w) => w.waste_type === "00001").length,
-            recyclable: dayData.filter((w) => w.waste_type === "00002").length,
-            general: dayData.filter((w) => w.waste_type === "00003").length,
-            hazardous: dayData.filter((w) => w.waste_type === "00004").length,
+            organic: tempOrganic,
+            recyclable: tempRecyclable,
+            general: tempGeneral,
+            hazardous: tempHazardous,
           })
         }
 
@@ -178,23 +303,96 @@ export function WasteSummary() {
 
           const weekData = wasteData.filter((w) => w.timestamp >= weekStart && w.timestamp <= weekEnd)
 
+          let tempOrganic = 0
+          let tempRecyclable = 0
+          let tempGeneral = 0
+          let tempHazardous = 0
+          
+          const summaryType = wasteType.map((type) => {
+            var  id = type.id
+            var  name =  type.waste_type
+            const filterType = weekData.filter((w) => w.waste_type === id).length
+             if (name === "hazardous waste") {
+              tempHazardous += filterType
+            } else if (name === "organic waste") {
+              tempOrganic += filterType
+            } else if (name === "recyclable waste") {
+              tempRecyclable += filterType
+            } else if (name === "general waste") {
+              tempGeneral += filterType
+            }
+            
+            console.log("Summary:")
+            return {
+              id: id,
+              filterType: filterType,
+              Typename: name,
+            }
+          })
           monthlyData.push({
             week: `Week ${i + 1}`,
             total: weekData.length,
-            organic: weekData.filter((w) => w.waste_type === "00001").length,
-            recyclable: weekData.filter((w) => w.waste_type === "00002").length,
-            general: weekData.filter((w) => w.waste_type === "00003").length,
-            hazardous: weekData.filter((w) => w.waste_type === "00004").length,
+            organic: tempOrganic,
+            recyclable: tempRecyclable,
+            general: tempGeneral,
+            hazardous: tempHazardous,
           })
         }
 
+        const yearlyData: any[] = []
+
+        for (let i = 0; i < 12; i++) {
+          const monthStart = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1)
+          const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0, 23, 59, 59, 999)
+
+          const monthData = wasteData.filter((w) => w.timestamp >= monthStart && w.timestamp <= monthEnd)
+
+          let tempOrganic = 0
+          let tempRecyclable = 0
+          let tempGeneral = 0
+          let tempHazardous = 0
+
+          const summaryType = wasteType.map((type) => {
+            const id = type.id
+            const name = type.waste_type
+            const filterType = monthData.filter((w) => w.waste_type === id).length
+
+            if (name === "hazardous waste") {
+              tempHazardous += filterType
+            } else if (name === "organic waste") {
+              tempOrganic += filterType
+            } else if (name === "recyclable waste") {
+              tempRecyclable += filterType
+            } else if (name === "general waste") {
+              tempGeneral += filterType
+            }
+
+            return {
+              id: id,
+              filterType: filterType,
+              Typename: name,
+            }
+          })
+
+          yearlyData.push({
+            month: monthStart.toLocaleString('en-US', { month: 'short', year: 'numeric' }),
+            total: monthData.length,
+            organic: tempOrganic,
+            recyclable: tempRecyclable,
+            general: tempGeneral,
+            hazardous: tempHazardous,
+          })
+        }
+
+
         setSummaryData({
-          totalWaste: wasteData.length,
+          totalWaste: tempOrganic + tempRecyclable + tempGeneral + tempHazardous,
           wasteByType,
           wasteByDisposal,
           dailyData,
           weeklyData,
           monthlyData,
+          yearlyData
         })
       } catch (error) {
         console.error("Error fetching waste data:", error)
@@ -214,6 +412,8 @@ export function WasteSummary() {
         return summaryData.weeklyData
       case "monthly":
         return summaryData.monthlyData
+      case "yearly":
+        return summaryData.yearlyData  
       default:
         return summaryData.dailyData
     }
@@ -227,6 +427,8 @@ export function WasteSummary() {
         return "date"
       case "monthly":
         return "week"
+      case "yearly":
+        return "month"
       default:
         return "time"
     }
@@ -340,6 +542,7 @@ export function WasteSummary() {
                 <TabsTrigger value="daily">Daily</TabsTrigger>
                 <TabsTrigger value="weekly">Weekly</TabsTrigger>
                 <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                <TabsTrigger value="yearly">yearly</TabsTrigger>
               </TabsList>
               <div className="h-[300px]">
                 <ChartContainer
@@ -386,12 +589,12 @@ export function WasteSummary() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-4 grid-rows-2">
-          <Card>
+        <div className="grid gap-4 md:grid-cols-1">
+          <Card >
             <CardHeader>
-              <CardTitle>Waste by Type</CardTitle>
+              <CardTitle>Waste distribution by type</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className=" mt-10">
               <div className="h-[140px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -411,33 +614,15 @@ export function WasteSummary() {
                     </Pie>
                     <Tooltip />
                   </PieChart>
+                  
                 </ResponsiveContainer>
+                
+                
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Waste Disposal Methods</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[140px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={wasteDisposalData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#60a5fa">
-                      {wasteDisposalData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index + (4 % COLORS.length)]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          
         </div>
       </div>
     </div>
