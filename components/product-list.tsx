@@ -309,7 +309,7 @@ export function ProductList() {
                 <div>
                   <h3 className="font-medium">{product.name}</h3>
                   <p className="text-muted-foreground">${product.price.toFixed(2)}</p>
-                  <p className="text-muted-foreground">${product.stock.toFixed(2)}</p>
+                  <p className="text-muted-foreground">Stock : {product.stock}</p>
                 </div>
                 <div className="flex space-x-1">
                   <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEditClick(product)}>

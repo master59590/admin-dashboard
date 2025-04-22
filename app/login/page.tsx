@@ -5,13 +5,15 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { signIn } from "../../lib/auth"
+import { checkAdmin , signIn } from "../../lib/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -36,7 +38,6 @@ export default function LoginPage() {
 
     try {
       const { user, error } = await signIn(email, password)
-
       if (error) {
         toast({
           title: "Login failed",
@@ -48,6 +49,7 @@ export default function LoginPage() {
       }
 
       if (user) {
+       
         toast({
           title: "Login successful",
           description: "Welcome back!",

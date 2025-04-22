@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           router.push("/")
         }
       } catch (error) {
-        console.error("Auth check error:", error)
+        alert("Auth check error:"+ error)
       } finally {
         setLoading(false)
       }

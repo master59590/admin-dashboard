@@ -6,16 +6,32 @@ import {
     onAuthStateChanged,
     type User,
   } from "firebase/auth"
-  import { doc, getDoc, setDoc } from "firebase/firestore"
+  import { doc, getDoc, setDoc , getDocs , collection ,query ,where , getFirestore} from "firebase/firestore"
   import { db } from "./firebase"
+
   
   const auth = getAuth()
   
   export const signIn = async (email: string, password: string) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
-      return { user: userCredential.user, error: null }
-    } catch (error: any) {
+      if (userCredential.user.email) {
+        const adminRef = collection(db, "admin_id")
+        const q = query(adminRef, where("email", "==", userCredential.user.email))
+        const querySnapshot = await getDocs(q)
+        if (!querySnapshot.empty) {
+          alert("Welcome Admin")
+          return { user: userCredential.user, error: null }
+        } else {
+          await signOut()
+          alert("You are not an admin")
+          return { user: null, error: "Login Failed" }
+        }
+        }
+      }
+
+    catch (error: any) {
+      await signOut()
       return { user: null, error: error.message }
     }
   }
@@ -71,4 +87,18 @@ import {
       return { userData: null, error: error.message }
     }
   }
+
+  export const checkAdmin = async (email: string) => {
+    try {
+      const userDoc = await getDoc(doc(db, "admin_id", email))
+      if (userDoc.exists()) {
+        return { isAdmin: true, error: null }
+      } else {
+        return { isAdmin: false, error: null }
+      }
+    } catch (error: any) {
+      return { isAdmin: false, error: error.message }
+    }
+  }
+  
   

@@ -84,7 +84,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
-            <h1 className="text-xl font-bold">Firebase Dashboard</h1>
+            <h1 className="text-xl font-bold pl-5">Ecos Dashboard</h1>
           </div>
 
           {user && (

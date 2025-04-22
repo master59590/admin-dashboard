@@ -492,7 +492,7 @@ export function WasteSummary() {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Waste</CardTitle>
@@ -527,6 +527,15 @@ export function WasteSummary() {
           <CardContent>
             <div className="text-2xl font-bold">{summaryData.wasteByType.hazardous}</div>
             <p className="text-xs text-muted-foreground">Dangerous or toxic materials</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">General</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summaryData.wasteByType.general}</div>
+            <p className="text-xs text-muted-foreground">General materials</p>
           </CardContent>
         </Card>
       </div>
@@ -594,16 +603,17 @@ export function WasteSummary() {
             <CardHeader>
               <CardTitle>Waste distribution by type</CardTitle>
             </CardHeader>
-            <CardContent className=" mt-10">
-              <div className="h-[140px]">
+            
+            <CardContent className="mt-12">
+              <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={wasteTypeData}
                       cx="50%"
                       cy="50%"
-                      labelLine={false}
-                      outerRadius={60}
+                      // labelLine={false}
+                      outerRadius={70}
                       fill="#8884d8"
                       dataKey="value"
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}

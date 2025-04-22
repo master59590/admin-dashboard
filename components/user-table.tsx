@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { collection, getDocs, query, orderBy, limit, startAfter, doc, updateDoc } from "firebase/firestore"
+import { collection, getDocs, query, orderBy, limit, startAfter, doc, updateDoc , deleteDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -27,6 +27,17 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+// import { AlertDialogHeader } from "./ui/alert-dialog"
 
 interface User {
   id: string
@@ -53,6 +64,7 @@ export function UserTable() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [editedUser, setEditedUser] = useState<{
     name: string
     email: string
@@ -151,6 +163,44 @@ export function UserTable() {
       setFilteredUsers(filtered)
     }
   }, [searchTerm, users])
+
+  const handleDeleteClick = (user: User) => {
+    setSelectedUser(user)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return
+
+    try {
+      setIsSubmitting(true)
+
+      // Delete from Firestore
+      await deleteDoc(doc(db, "user_id", selectedUser.id))
+
+      // Update local state
+      const updatedUsers = users.filter((user) => user.id !== selectedUser.id)
+      setUsers(updatedUsers)
+      setFilteredUsers(updatedUsers)
+
+      toast({
+        title: "User deleted",
+        description: "User has been successfully deleted",
+      })
+
+      // Close dialog
+      setDeleteDialogOpen(false)
+    } catch (error) {
+      console.error("Error deleting user:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
   
   const handleNextPage = () => {
     if (hasMore && !loading) {
@@ -353,12 +403,14 @@ export function UserTable() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>User Id</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Department ID</TableHead>
               <TableHead>Points</TableHead>
               <TableHead>Created</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Action</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -372,6 +424,7 @@ export function UserTable() {
             ) : (
               filteredUsers.map((user) => (
                 <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.id}</TableCell>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.department_id}</TableCell>
@@ -393,6 +446,12 @@ export function UserTable() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleViewClick(user)}>View details</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEditClick(user)}>Edit user</DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteClick(user)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          Delete user
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -558,6 +617,36 @@ export function UserTable() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this user?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user account and remove their data from our
+              servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={isSubmitting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

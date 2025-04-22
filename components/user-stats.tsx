@@ -59,7 +59,7 @@ export function UserStats() {
         
         // ลองแสดงข้อมูลดู
         setUser(recentActiveUsersId);
-        console.log("Recently active users:", recentActiveUsersId[0].id);
+        // console.log("Recently active users:", recentActiveUsersId[0].id);
 
         setStats({
           totalUsers,

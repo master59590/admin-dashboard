@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast"
 export function UploadForm() {
   const [name, setName] = useState("")
   const [price, setPrice] = useState("")
+  const [editStock, setEditStock] = useState("")
   const [description, setDescription] = useState("")
   const [image, setImage] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
@@ -85,6 +86,7 @@ export function UploadForm() {
         price: Number.parseFloat(price),
         description,
         imageUrl,
+        stock: Number.parseInt(editStock),
         createdAt: new Date(),
       })
 
@@ -96,6 +98,7 @@ export function UploadForm() {
       // Reset form
       setName("")
       setPrice("")
+      setEditStock("")
       setDescription("")
       setImage(null)
       setImagePreview(null)
@@ -140,6 +143,20 @@ export function UploadForm() {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="0.00"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="stock">Stock</Label>
+            <Input
+              id="stock"
+              type="number"
+              step="1"
+              min="0"
+              value={editStock}
+              onChange={(e) => setEditStock(e.target.value)}
+              placeholder="0"
               disabled={loading}
             />
           </div>
