@@ -33,12 +33,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const navItems = [
     {
-      title: "Dashboard",
+      title: "All Products",
       href: "/",
       icon: Home,
     },
     {
-      title: "Products",
+      title: "Upload Product",
       href: "/upload",
       icon: Upload,
     },

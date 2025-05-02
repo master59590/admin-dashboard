@@ -19,6 +19,7 @@ import {
         const adminRef = collection(db, "admin_id")
         const q = query(adminRef, where("email", "==", userCredential.user.email))
         const querySnapshot = await getDocs(q)
+        
         if (!querySnapshot.empty) {
           alert("Welcome Admin")
           return { user: userCredential.user, error: null }
