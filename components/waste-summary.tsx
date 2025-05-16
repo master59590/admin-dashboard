@@ -504,16 +504,16 @@ export function WasteSummary() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Organic Waste</CardTitle>
+            <CardTitle className="text-sm font-medium text-[#4ade80]">Organic Waste</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summaryData.wasteByType.organic}</div>
-            <p className="text-xs text-muted-foreground">Compostable waste items</p>
+            <p className="text-xs text-muted-foreground">Biodegradable waste</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recyclable Waste</CardTitle>
+            <CardTitle className="text-sm font-medium text-[#60a5fa]">Recyclable Waste</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summaryData.wasteByType.recyclable}</div>
@@ -522,7 +522,7 @@ export function WasteSummary() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Hazardous Waste</CardTitle>
+            <CardTitle className="text-sm font-medium text-[#f97316]">Hazardous Waste</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summaryData.wasteByType.hazardous}</div>
@@ -531,7 +531,7 @@ export function WasteSummary() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">General</CardTitle>
+            <CardTitle className="text-sm font-medium text-[#f43f5e]">General</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summaryData.wasteByType.general}</div>
@@ -558,23 +558,23 @@ export function WasteSummary() {
                   config={{
                     total: {
                       label: "Total",
-                      color: "hsl(var(--chart-1))",
+                      color: "white",
                     },
                     organic: {
                       label: "Organic",
-                      color: "hsl(var(--chart-2))",
+                      color: "#4ade80",
                     },
                     recyclable: {
                       label: "Recyclable",
-                      color: "hsl(var(--chart-3))",
+                      color: "#60a5fa",
                     },
                     general: {
                       label: "General",
-                      color: "hsl(var(--chart-4))",
+                      color: "#f97316",
                     },
                     hazardous: {
                       label: "Hazardous",
-                      color: "hsl(var(--chart-5))",
+                      color: "#f43f5e",
                     },
                   }}
                 >
