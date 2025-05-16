@@ -31,7 +31,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { toast } = useToast()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const navItems = [
+  const navItemsPromotion = [
     {
       title: "All Products",
       href: "/",
@@ -41,12 +41,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       title: "Upload Product",
       href: "/upload",
       icon: Upload,
-    },
+    }
+  ]
+
+  const navItemsUser = [
     {
       title: "Users",
       href: "/users",
       icon: Users,
     },
+  ]
+
+  const navItemsWaste = [
     {
       title: "Waste Management",
       href: "/waste",
@@ -112,15 +118,52 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Mobile menu */}
         {mobileMenuOpen && (
           <aside className="fixed inset-0 top-16 z-30 h-[calc(100vh-4rem)] w-full bg-background p-6 md:hidden">
+            <p className="ml-3 text-sm">Promotion</p>
             <nav className="grid items-start gap-2">
-              {navItems.map((item) => {
+              {navItemsPromotion.map((item) => {
                 const isActive = pathname === item.href
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-orange-500",
+                      isActive ? "bg-accent text-accent-foreground" : "transparent",
+                    )}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.title}
+                  </Link>
+                )
+              })}
+              <p className="ml-3 text-sm mt-2">User</p>
+              {navItemsUser.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-sky-400",
+                      isActive ? "bg-accent text-accent-foreground" : "transparent",
+                    )}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.title}
+                  </Link>
+                )
+              })}
+              <p className="ml-3 text-sm mt-2">Waste</p>
+              {navItemsWaste.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-emerald-500",
                       isActive ? "bg-accent text-accent-foreground" : "transparent",
                     )}
                     onClick={() => setMobileMenuOpen(false)}
@@ -137,14 +180,50 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Desktop sidebar */}
         <aside className="fixed top-16 z-30 hidden h-[calc(100vh-4rem)] w-full shrink-0 overflow-y-auto border-r py-6 pr-2 md:sticky md:block lg:py-8">
           <nav className="grid items-start gap-2">
-            {navItems.map((item) => {
+            <p className="ml-3 text-sm">Promotion</p>
+            {navItemsPromotion.map((item) => {
               const isActive = pathname === item.href
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-orange-500",
+                    isActive ? "bg-accent text-accent-foreground" : "transparent",
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.title}
+                </Link>
+              )
+            })}
+            
+            <p className="ml-3 text-sm mt-2">User</p>
+            {navItemsUser.map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-sky-400",
+                    isActive ? "bg-accent text-accent-foreground" : "transparent",
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.title}
+                </Link>
+              )
+            })}
+            <p className="ml-3 text-sm mt-2 text-emerald-50">Waste</p>
+            {navItemsWaste.map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-emerald-500",
                     isActive ? "bg-accent text-accent-foreground" : "transparent",
                   )}
                 >
