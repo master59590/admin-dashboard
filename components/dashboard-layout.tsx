@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Upload, Users, Trash2, LogOut, Menu, X, User } from "lucide-react"
+import { Home, Upload, Users, Trash2, LogOut, Menu, X, User ,Cog} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/components/auth-provider"
 import { signOut } from "@/lib/auth"
@@ -57,6 +57,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       title: "Waste Management",
       href: "/waste",
       icon: Trash2,
+    },
+  ]
+
+   const navItemsSystem = [
+    {
+      title: "System",
+      href: "/system",
+      icon: Cog,
     },
   ]
 
@@ -215,8 +223,27 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </Link>
               )
             })}
-            <p className="ml-3 text-sm mt-2 text-emerald-50">Waste</p>
+            <p className="ml-3 text-sm mt-2">Waste</p>
             {navItemsWaste.map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-emerald-500",
+                    isActive ? "bg-accent text-accent-foreground" : "transparent",
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.title}
+                </Link>
+              )
+            })}
+        
+
+            <p className="ml-3 text-sm mt-2">System</p>
+            {navItemsSystem.map((item) => {
               const isActive = pathname === item.href
               return (
                 <Link

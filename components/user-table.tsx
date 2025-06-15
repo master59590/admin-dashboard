@@ -82,6 +82,11 @@ export function UserTable() {
   // Store the last document for pagination
   const [lastVisibleDoc, setLastVisibleDoc] = useState<any>(null)
   const [firstPage, setFirstPage] = useState<User[]>([])
+  
+  useEffect(() => {
+    console.log(filteredUsers)
+  }, [filteredUsers])
+  
 
   const fetchUsers = async (pageNum: number) => {
     try {
