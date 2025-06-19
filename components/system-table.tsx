@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, MoreHorizontal, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { Search, MoreHorizontal, ChevronLeft, ChevronRight,  Loader , Loader2 , LoaderCircle  } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -61,6 +61,7 @@ interface Sensor {
 export function SystemTable() {
   const [sensor, setSensor] = useState<Sensor[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingCreate, setLoadingCreate] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [filteredSensor, setFilteredSensor] = useState<Sensor[]>([])
@@ -356,6 +357,29 @@ export function SystemTable() {
   const handleCreateClick = () => {
     setCreateDialogOpen(true)
   }
+  
+  const handleUpdateSensor = async () => {
+{
+    const url = "http://192.168.1.121:8000/api/SensorStatusUpdate";
+    try {
+      setLoadingCreate(true)
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Response status: ${response.status}`);
+      }
+
+      const json = await response.json();
+      console.log(json);
+      fetchSystem(1)
+    } catch (error) {
+      console.error(error.message);
+    } finally {
+      setLoadingCreate(false)
+      window.location.reload()
+    }
+}
+  }
+  
 
   const handleViewClick = (system: Sensor) => {
     setSelectedSystem(system)
@@ -561,18 +585,40 @@ export function SystemTable() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button
-          type="button"
-          className="ml-auto flex-shrink-0
-    bg-green-600 text-white
-    hover:bg-green-700
-    active:bg-green-800
-    focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500
-    transition-colors duration-200"
-        onClick={handleCreateClick}
-        >
+        <div>
+          <Button
+            type="button"
+            className="ml-auto mr-3 flex-shrink-0
+                      bg-cyan-600 text-white
+                      hover:bg-cyan-700
+                      active:bg-cyan-800
+                      focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-cyan-500
+                      transition-colors duration-200"
+            onClick={handleUpdateSensor}
+            >
+            {loadingCreate ? (
+              <>
+                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                Update...
+              </>
+            ) : (
+              "Update All Sensor Status"
+            )}
+          </Button>
+          <Button
+                    type="button"
+                    className="ml-auto flex-shrink-0
+              bg-green-600 text-white
+              hover:bg-green-700
+              active:bg-green-800
+              focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500
+              transition-colors duration-200"
+                  onClick={handleCreateClick}
+                  >
           Create Device +
         </Button>
+        </div>
+        
       </div>
 
       <div className="rounded-md border">
