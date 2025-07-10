@@ -1,15 +1,25 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { Home, Upload, Users, Trash2, LogOut, Menu, X, User ,Cog} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { useAuth } from "@/components/auth-provider"
-import { signOut } from "@/lib/auth"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  Home,
+  Upload,
+  Users,
+  Trash2,
+  LogOut,
+  Menu,
+  X,
+  User,
+  Cog,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/auth-provider";
+import { signOut } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,19 +27,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useToast } from "@/hooks/use-toast"
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const pathname = usePathname()
-  const { user } = useAuth()
-  const router = useRouter()
-  const { toast } = useToast()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const pathname = usePathname();
+  const { user } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItemsPromotion = [
     {
@@ -41,16 +51,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       title: "Upload Product",
       href: "/upload",
       icon: Upload,
-    }
-  ]
-
+    },
+  ];
+  const navItemsRedemption = [
+    {
+      title: "Redemption",
+      href: "/redemptions",
+      icon: User,
+    },
+  ];
   const navItemsUser = [
     {
       title: "Users",
       href: "/users",
       icon: Users,
     },
-  ]
+  ];
 
   const navItemsWaste = [
     {
@@ -58,32 +74,32 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       href: "/waste",
       icon: Trash2,
     },
-  ]
+  ];
 
-   const navItemsSystem = [
+  const navItemsSystem = [
     {
       title: "System",
       href: "/system",
       icon: Cog,
     },
-  ]
+  ];
 
   const handleSignOut = async () => {
-    const { error } = await signOut()
+    const { error } = await signOut();
     if (error) {
       toast({
         title: "Error signing out",
         description: error,
         variant: "destructive",
-      })
+      });
     } else {
       toast({
         title: "Signed out",
         description: "You have been signed out successfully",
-      })
-      router.push("/login")
+      });
+      router.push("/login");
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -96,7 +112,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               className="md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </Button>
             <h1 className="text-xl font-bold pl-5">Ecos Dashboard</h1>
           </div>
@@ -129,57 +149,63 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <p className="ml-3 text-sm">Promotion</p>
             <nav className="grid items-start gap-2">
               {navItemsPromotion.map((item) => {
-                const isActive = pathname === item.href
+                const isActive = pathname === item.href;
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={cn(
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-orange-500",
-                      isActive ? "bg-accent text-accent-foreground" : "transparent",
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "transparent"
                     )}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <item.icon className="h-4 w-4" />
                     {item.title}
                   </Link>
-                )
+                );
               })}
               <p className="ml-3 text-sm mt-2">User</p>
               {navItemsUser.map((item) => {
-                const isActive = pathname === item.href
+                const isActive = pathname === item.href;
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={cn(
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-sky-400",
-                      isActive ? "bg-accent text-accent-foreground" : "transparent",
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "transparent"
                     )}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <item.icon className="h-4 w-4" />
                     {item.title}
                   </Link>
-                )
+                );
               })}
               <p className="ml-3 text-sm mt-2">Waste</p>
               {navItemsWaste.map((item) => {
-                const isActive = pathname === item.href
+                const isActive = pathname === item.href;
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={cn(
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-emerald-500",
-                      isActive ? "bg-accent text-accent-foreground" : "transparent",
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "transparent"
                     )}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <item.icon className="h-4 w-4" />
                     {item.title}
                   </Link>
-                )
+                );
               })}
             </nav>
           </aside>
@@ -190,80 +216,108 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <nav className="grid items-start gap-2">
             <p className="ml-3 text-sm">Promotion</p>
             {navItemsPromotion.map((item) => {
-              const isActive = pathname === item.href
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-orange-500",
-                    isActive ? "bg-accent text-accent-foreground" : "transparent",
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "transparent"
                   )}
                 >
                   <item.icon className="h-4 w-4" />
                   {item.title}
                 </Link>
-              )
+              );
             })}
-            
-            <p className="ml-3 text-sm mt-2">User</p>
-            {navItemsUser.map((item) => {
-              const isActive = pathname === item.href
+
+            <p className="ml-3 text-sm mt-2">Redemptions</p>
+            {navItemsRedemption.map((item) => {
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-sky-400",
-                    isActive ? "bg-accent text-accent-foreground" : "transparent",
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "transparent"
                   )}
                 >
                   <item.icon className="h-4 w-4" />
                   {item.title}
                 </Link>
-              )
+              );
+            })}
+            <p className="ml-3 text-sm mt-2">User</p>
+            {navItemsUser.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-sky-400",
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "transparent"
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.title}
+                </Link>
+              );
             })}
             <p className="ml-3 text-sm mt-2">Waste</p>
             {navItemsWaste.map((item) => {
-              const isActive = pathname === item.href
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-emerald-500",
-                    isActive ? "bg-accent text-accent-foreground" : "transparent",
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "transparent"
                   )}
                 >
                   <item.icon className="h-4 w-4" />
                   {item.title}
                 </Link>
-              )
+              );
             })}
-        
 
             <p className="ml-3 text-sm mt-2">System</p>
             {navItemsSystem.map((item) => {
-              const isActive = pathname === item.href
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-emerald-500",
-                    isActive ? "bg-accent text-accent-foreground" : "transparent",
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "transparent"
                   )}
                 >
                   <item.icon className="h-4 w-4" />
                   {item.title}
                 </Link>
-              )
+              );
             })}
           </nav>
         </aside>
 
-        <main className="flex w-full flex-col overflow-hidden py-6 lg:py-8">{children}</main>
+        <main className="flex w-full flex-col overflow-hidden py-6 lg:py-8">
+          {children}
+        </main>
       </div>
     </div>
-  )
+  );
 }
