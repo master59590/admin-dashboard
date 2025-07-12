@@ -15,6 +15,7 @@ import {
   X,
   User,
   Cog,
+  Gift,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -57,7 +58,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     {
       title: "Redemption",
       href: "/redemptions",
-      icon: User,
+      icon: Gift,
     },
   ];
   const navItemsUser = [
@@ -80,6 +81,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     {
       title: "System",
       href: "/system",
+      icon: Cog,
+    },
+    {
+      title: "Configs",
+      href: "/configs",
       icon: Cog,
     },
   ];
@@ -146,7 +152,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Mobile menu */}
         {mobileMenuOpen && (
           <aside className="fixed inset-0 top-16 z-30 h-[calc(100vh-4rem)] w-full bg-background p-6 md:hidden">
-            <p className="ml-3 text-sm">Promotion</p>
+            <p className="ml-3 text-sm">Products</p>
             <nav className="grid items-start gap-2">
               {navItemsPromotion.map((item) => {
                 const isActive = pathname === item.href;
@@ -159,6 +165,26 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       isActive
                         ? "bg-accent text-accent-foreground"
                         : "transparent"
+                    )}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.title}
+                  </Link>
+                );
+              })}
+              <p className="ml-3 text-sm mt-2">Redemptions</p>
+              {navItemsRedemption.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-sky-400",
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "text-yellow-400"
                     )}
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -214,7 +240,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Desktop sidebar */}
         <aside className="fixed top-16 z-30 hidden h-[calc(100vh-4rem)] w-full shrink-0 overflow-y-auto border-r py-6 pr-2 md:sticky md:block lg:py-8">
           <nav className="grid items-start gap-2">
-            <p className="ml-3 text-sm">Promotion</p>
+            <p className="ml-3 text-sm">Products</p>
             {navItemsPromotion.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -245,7 +271,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-sky-400",
                     isActive
                       ? "bg-accent text-accent-foreground"
-                      : "transparent"
+                      : "text-yellow-400"
                   )}
                 >
                   <item.icon className="h-4 w-4" />

@@ -1,6 +1,6 @@
 import React from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { Redemption } from "@/components/redemptionslog";
+import Redemption from "@/components/redemptionslog";
 const page = () => {
   return (
     <div>

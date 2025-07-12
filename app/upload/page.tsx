@@ -1,5 +1,5 @@
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { UploadForm } from "@/components/upload-form"
+import { DashboardLayout } from "@/components/dashboard-layout";
+import { UploadForm } from "@/components/upload-form";
 
 export default function UploadPage() {
   return (
@@ -12,5 +12,5 @@ export default function UploadPage() {
         <UploadForm />
       </div>
     </DashboardLayout>
-  )
+  );
 }
