@@ -16,6 +16,8 @@ import {
   User,
   Cog,
   Gift,
+  ScrollText,
+  SlidersHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -86,7 +88,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     {
       title: "Configs",
       href: "/configs",
-      icon: Cog,
+      icon: SlidersHorizontal,
+    },
+    {
+      title: "Logs",
+      href: "/alllogs",
+      icon: ScrollText,
     },
   ];
 
@@ -233,6 +240,26 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   </Link>
                 );
               })}
+              <p className="ml-3 text-sm mt-2">System</p>
+              {navItemsSystem.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground text-emerald-500",
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "transparent"
+                    )}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.title}
+                  </Link>
+                );
+              })}
             </nav>
           </aside>
         )}
@@ -340,7 +367,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </nav>
         </aside>
 
-        <main className="flex w-full flex-col overflow-hidden py-6 lg:py-8">
+        <main className="flex w-full flex-col overflow-hidden py-6 lg:py-8 pl-6 pr-16 max-w-7xl mx-auto">
           {children}
         </main>
       </div>

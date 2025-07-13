@@ -1,11 +1,32 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { collection, getDocs, query, orderBy, limit, startAfter, doc, updateDoc , deleteDoc } from "firebase/firestore"
-import { db } from "@/lib/firebase"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useEffect, useState } from "react";
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+  startAfter,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  where,
+} from "firebase/firestore";
+import { deleteUser } from "firebase/auth";
+
+import { db } from "@/lib/firebase";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,10 +34,26 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Search, MoreHorizontal, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+
+import { Timestamp } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Search,
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,9 +61,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,86 +73,119 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 // import { AlertDialogHeader } from "./ui/alert-dialog"
 
 interface User {
-  id: string
-  name: string
-  email: string
-  department_id: string
-  firebase_uid: string
-  user_point: number
-  createdAt: Date
-  update_at: Date
+  id: string;
+  name: string;
+  email: string;
+  department_id: string;
+  firebase_uid: string;
+  user_point: number;
+  createdAt: Date;
+  update_at: Date;
 }
 
 export function UserTable() {
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([])
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
-  const [hasPrevious, setHasPrevious] = useState(false)
-  const usersPerPage = 10
-  const [pageCursors, setPageCursors] = useState<any[]>([]) // เก็บเอกสารสุดท้ายของแต่ละหน้า
+  const auth = getAuth();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [hasPrevious, setHasPrevious] = useState(false);
+  const usersPerPage = 10;
+  const [pageCursors, setPageCursors] = useState<any[]>([]); // เก็บเอกสารสุดท้ายของแต่ละหน้า
   // Edit and view state
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [viewDialogOpen, setViewDialogOpen] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [departments, setDepartments] = useState<
+    { id: string; name: string }[]
+  >([]);
+
   const [editedUser, setEditedUser] = useState<{
-    name: string
-    email: string
-    department_id: string
-    user_point: number
+    name: string;
+    email: string;
+    department_id: string;
+    user_point: number;
   }>({
     name: "",
     email: "",
     department_id: "",
     user_point: 0,
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const { toast } = useToast()
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   // Store the last document for pagination
-  const [lastVisibleDoc, setLastVisibleDoc] = useState<any>(null)
-  const [firstPage, setFirstPage] = useState<User[]>([])
-  
+  const [lastVisibleDoc, setLastVisibleDoc] = useState<any>(null);
+  const [firstPage, setFirstPage] = useState<User[]>([]);
+
   useEffect(() => {
-    console.log(filteredUsers)
-  }, [filteredUsers])
-  
+    console.log(filteredUsers);
+  }, [filteredUsers]);
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      const deptSnapshot = await getDocs(collection(db, "department_id"));
+      const deptList = deptSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().job_title,
+      }));
+      setDepartments(deptList);
+    };
+
+    fetchDepartments();
+  }, []);
+
+  const getAdminIdByEmail = async (email: string): Promise<string> => {
+    const q = query(collection(db, "admin_id"), where("email", "==", email));
+
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      return doc.id; // <-- คืนค่า doc id เช่น "0001"
+    }
+
+    return "unknown";
+  };
 
   const fetchUsers = async (pageNum: number) => {
     try {
-      setLoading(true)
-      const usersCollection = collection(db, "user_id")
-      let userQuery
-  
+      setLoading(true);
+      const usersCollection = collection(db, "user_id");
+      let userQuery;
+
       if (pageNum === 1) {
-        userQuery = query(usersCollection, orderBy("createdAt", "desc"), limit(usersPerPage))
+        userQuery = query(
+          usersCollection,
+          orderBy("createdAt", "desc"),
+          limit(usersPerPage)
+        );
       } else {
-        const previousCursor = pageCursors[pageNum - 2]
-        if (!previousCursor) return
-  
+        const previousCursor = pageCursors[pageNum - 2];
+        if (!previousCursor) return;
+
         userQuery = query(
           usersCollection,
           orderBy("createdAt", "desc"),
           startAfter(previousCursor),
           limit(usersPerPage)
-        )
+        );
       }
-  
-      const userSnapshot = await getDocs(userQuery)
+
+      const userSnapshot = await getDocs(userQuery);
       if (userSnapshot.empty) {
-        setHasMore(false)
-        return
+        setHasMore(false);
+        return;
       }
-  
+
       const userList = userSnapshot.docs.map((doc) => {
-        const data = doc.data()
+        const data = doc.data();
         return {
           id: doc.id,
           name: data.name || "N/A",
@@ -123,108 +193,135 @@ export function UserTable() {
           department_id: String(data.department_id || "N/A"),
           firebase_uid: data.firebase_uid || "N/A",
           user_point: data.user_point || 0,
-          createdAt: data.createdAt instanceof Date ? data.createdAt : data.createdAt?.toDate() || new Date(),
-          update_at: data.update_at instanceof Date ? data.update_at : data.update_at?.toDate() || new Date(),
-        }
-      })
-  
+          createdAt:
+            data.createdAt instanceof Date
+              ? data.createdAt
+              : data.createdAt?.toDate() || new Date(),
+          update_at:
+            data.update_at instanceof Date
+              ? data.update_at
+              : data.update_at?.toDate() || new Date(),
+        };
+      });
+
       // เพิ่ม cursor สำหรับหน้าใหม่ ถ้าเป็นหน้าแรกไม่ต้องเพิ่ม
       if (pageNum === 1) {
-        setPageCursors([userSnapshot.docs[userSnapshot.docs.length - 1]])
+        setPageCursors([userSnapshot.docs[userSnapshot.docs.length - 1]]);
       } else {
         setPageCursors((prev) => {
-          const newCursors = [...prev]
-          newCursors[pageNum - 1] = userSnapshot.docs[userSnapshot.docs.length - 1]
-          return newCursors
-        })
+          const newCursors = [...prev];
+          newCursors[pageNum - 1] =
+            userSnapshot.docs[userSnapshot.docs.length - 1];
+          return newCursors;
+        });
       }
-  
-      setUsers(userList)
-      setFilteredUsers(userList)
-      setHasPrevious(pageNum > 1)
-      setHasMore(userSnapshot.size === usersPerPage)
+
+      setUsers(userList);
+      setFilteredUsers(userList);
+      setHasPrevious(pageNum > 1);
+      setHasMore(userSnapshot.size === usersPerPage);
     } catch (error) {
-      console.error("Error fetching users:", error)
+      console.error("Error fetching users:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-  
+  };
 
   useEffect(() => {
-    fetchUsers(1)
-  }, [])
+    fetchUsers(1);
+  }, []);
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
-      setFilteredUsers(users)
+      setFilteredUsers(users);
     } else {
       const filtered = users.filter(
         (user) =>
           (user.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
           (user.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          String(user.department_id || "").includes(searchTerm),
-      )
-      setFilteredUsers(filtered)
+          String(user.department_id || "").includes(searchTerm)
+      );
+      setFilteredUsers(filtered);
     }
-  }, [searchTerm, users])
+  }, [searchTerm, users]);
 
   const handleDeleteClick = (user: User) => {
-    setSelectedUser(user)
-    setDeleteDialogOpen(true)
-  }
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
+  };
 
   const handleDeleteUser = async () => {
-    if (!selectedUser) return
+    if (!selectedUser) return;
 
     try {
-      setIsSubmitting(true)
+      setIsSubmitting(true);
 
-      // Delete from Firestore
-      await deleteDoc(doc(db, "user_id", selectedUser.id))
+      // ✅ ดึง admin_id จากอีเมลปัจจุบัน
+      const currentUser = auth.currentUser;
+      let currentAdminId = "unknown";
 
-      // Update local state
-      const updatedUsers = users.filter((user) => user.id !== selectedUser.id)
-      setUsers(updatedUsers)
-      setFilteredUsers(updatedUsers)
+      if (currentUser?.email) {
+        currentAdminId = await getAdminIdByEmail(currentUser.email);
+      }
+
+      // ✅ ลบข้อมูลจาก Firestore
+      await deleteDoc(doc(db, "user_id", selectedUser.id));
+
+      // ✅ ลบจาก Firebase Authentication (เฉพาะ user ตัวเองเท่านั้น)
+      if (currentUser?.uid === selectedUser.firebase_uid) {
+        await deleteUser(currentUser); // ลบตัวเอง
+      }
+
+      // ✅ เพิ่ม log ลงใน User_management
+      await addDoc(collection(db, "User_management"), {
+        action: "delete",
+        admin_id: currentAdminId,
+        user_id: selectedUser.id,
+        timestamp: Timestamp.now(),
+        description: "deleteuser",
+      });
+
+      // ✅ อัปเดต local state
+      const updatedUsers = users.filter((user) => user.id !== selectedUser.id);
+      setUsers(updatedUsers);
+      setFilteredUsers(updatedUsers);
 
       toast({
         title: "User deleted",
         description: "User has been successfully deleted",
-      })
+      });
 
-      // Close dialog
-      setDeleteDialogOpen(false)
+      setDeleteDialogOpen(false);
     } catch (error) {
-      console.error("Error deleting user:", error)
+      console.error("Error deleting user:", error);
       toast({
         title: "Error",
         description: "Failed to delete user. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
-  
+  };
+
   const handleNextPage = () => {
     if (hasMore && !loading) {
-      const nextPage = page + 1
-      setPage(nextPage)
-      fetchUsers(nextPage)
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchUsers(nextPage);
     }
-  }
-  
+  };
+
   const handlePrevPage = () => {
     if (page > 1 && !loading) {
-      const prevPage = page - 1
-      setPage(prevPage)
-      fetchUsers(prevPage)
+      const prevPage = page - 1;
+      setPage(prevPage);
+      fetchUsers(prevPage);
     }
-  }
-  
+  };
+
   // const handleNextPage = () => {
-    
+
   //   if (hasMore && !loading) {
   //     const nextPage = page + 1
   //     setPage((prev) => prev + 1)
@@ -254,32 +351,64 @@ export function UserTable() {
   // }
 
   const handleEditClick = (user: User) => {
-    setSelectedUser(user)
+    setSelectedUser(user);
     setEditedUser({
       name: user.name,
       email: user.email,
       department_id: user.department_id,
       user_point: user.user_point,
-    })
-    setEditDialogOpen(true)
-  }
+    });
+    setEditDialogOpen(true);
+  };
 
   const handleViewClick = (user: User) => {
-    setSelectedUser(user)
-    setViewDialogOpen(true)
-  }
-
+    setSelectedUser(user);
+    setViewDialogOpen(true);
+  };
   const handleSaveEdit = async () => {
-    if (!selectedUser) return
+    if (!selectedUser) return;
 
-    // Validate inputs
+    const oldData = selectedUser;
+    const newData = editedUser;
+
+    const changes = [];
+    if (oldData.name !== newData.name)
+      changes.push(`editnamefrom${oldData.name}to${newData.name}`);
+    if (oldData.email !== newData.email)
+      changes.push(`editemailfrom${oldData.email}to${newData.email}`);
+    if (oldData.department_id !== newData.department_id)
+      changes.push(
+        `editdepartmentfrom${oldData.department_id}to${newData.department_id}`
+      );
+    if (oldData.user_point !== newData.user_point)
+      changes.push(`editpointfrom${oldData.user_point}to${newData.user_point}`);
+
+    const description = changes.join(",");
+    const currentUser = auth.currentUser;
+
+    let currentAdminId = "unknown";
+
+    if (currentUser?.email) {
+      currentAdminId = await getAdminIdByEmail(currentUser.email);
+    }
+
+    // ✅ Add log to Firestore
+    await addDoc(collection(db, "User_management"), {
+      action: "edit",
+      admin_id: currentAdminId,
+      user_id: selectedUser.id,
+      timestamp: Timestamp.now(),
+      description,
+    });
+
+    // ✅ Validation
     if (!editedUser.name.trim()) {
       toast({
         title: "Missing name",
         description: "Please enter a name for the user",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     if (!editedUser.email.trim() || !editedUser.email.includes("@")) {
@@ -287,38 +416,36 @@ export function UserTable() {
         title: "Invalid email",
         description: "Please enter a valid email address",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
-      setIsSubmitting(true)
+      setIsSubmitting(true);
 
-      // Update in Firestore
-      const userRef = doc(db, "user_id", selectedUser.id)
+      const userRef = doc(db, "user_id", selectedUser.id);
       await updateDoc(userRef, {
-        name: editedUser.name,
-        email: editedUser.email,
-        department_id: editedUser.department_id,
-        user_point: Number(editedUser.user_point),
+        name: newData.name,
+        email: newData.email,
+        department_id: newData.department_id,
+        user_point: Number(newData.user_point),
         update_at: new Date(),
-      })
+      });
 
-      // Update local state
       const updatedUsers = users.map((user) =>
         user.id === selectedUser.id
           ? {
               ...user,
-              name: editedUser.name,
-              email: editedUser.email,
-              department_id: editedUser.department_id,
-              user_point: Number(editedUser.user_point),
+              name: newData.name,
+              email: newData.email,
+              department_id: newData.department_id,
+              user_point: Number(newData.user_point),
               update_at: new Date(),
             }
-          : user,
-      )
+          : user
+      );
 
-      setUsers(updatedUsers)
+      setUsers(updatedUsers);
       setFilteredUsers(
         searchTerm.trim() === ""
           ? updatedUsers
@@ -326,28 +453,27 @@ export function UserTable() {
               (user) =>
                 user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                String(user.department_id).includes(searchTerm),
-            ),
-      )
+                String(user.department_id).includes(searchTerm)
+            )
+      );
 
       toast({
         title: "User updated",
         description: "User information has been successfully updated",
-      })
+      });
 
-      // Close dialog
-      setEditDialogOpen(false)
+      setEditDialogOpen(false);
     } catch (error) {
-      console.error("Error updating user:", error)
+      console.error("Error updating user:", error);
       toast({
         title: "Error",
         description: "Failed to update user. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const formatDate = (date: Date) => {
     try {
@@ -357,22 +483,22 @@ export function UserTable() {
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
-      }).format(date)
+      }).format(date);
     } catch (error) {
-      console.error("Error formatting date:", error)
-      return "Invalid date"
+      console.error("Error formatting date:", error);
+      return "Invalid date";
     }
-  }
+  };
 
   const isNewUser = (date: Date) => {
     try {
-      const oneWeekAgo = new Date()
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-      return date > oneWeekAgo
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      return date > oneWeekAgo;
     } catch (error) {
-      return false
+      return false;
     }
-  }
+  };
 
   if (loading && page === 1) {
     return (
@@ -386,7 +512,7 @@ export function UserTable() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -422,7 +548,10 @@ export function UserTable() {
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={7}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   No users found
                 </TableCell>
               </TableRow>
@@ -436,7 +565,11 @@ export function UserTable() {
                   <TableCell>{user.user_point}</TableCell>
                   <TableCell>{formatDate(user.createdAt)}</TableCell>
                   <TableCell>
-                    {isNewUser(user.createdAt) && <Badge className="bg-green-500 hover:bg-green-600">New</Badge>}
+                    {isNewUser(user.createdAt) && (
+                      <Badge className="bg-green-500 hover:bg-green-600">
+                        New
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -449,8 +582,12 @@ export function UserTable() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleViewClick(user)}>View details</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEditClick(user)}>Edit user</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewClick(user)}>
+                          View details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditClick(user)}>
+                          Edit user
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDeleteClick(user)}
                           className="text-destructive focus:text-destructive"
@@ -470,11 +607,21 @@ export function UserTable() {
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">Page {page}</div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={page <= 1 || loading}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrevPage}
+            disabled={page <= 1 || loading}
+          >
             <ChevronLeft className="h-4 w-4 mr-1" />
             Previous
           </Button>
-          <Button variant="outline" size="sm" onClick={handleNextPage} disabled={!hasMore || loading}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleNextPage}
+            disabled={!hasMore || loading}
+          >
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -495,7 +642,9 @@ export function UserTable() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>Make changes to user information here.</DialogDescription>
+            <DialogDescription>
+              Make changes to user information here.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
@@ -505,7 +654,9 @@ export function UserTable() {
               <Input
                 id="name"
                 value={editedUser.name}
-                onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
+                onChange={(e) =>
+                  setEditedUser({ ...editedUser, name: e.target.value })
+                }
                 className="col-span-3"
               />
             </div>
@@ -517,21 +668,37 @@ export function UserTable() {
                 id="email"
                 type="email"
                 value={editedUser.email}
-                onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
+                onChange={(e) =>
+                  setEditedUser({ ...editedUser, email: e.target.value })
+                }
                 className="col-span-3"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="department" className="text-right">
-                Department ID
+                Department
               </Label>
-              <Input
-                id="department"
-                value={editedUser.department_id}
-                onChange={(e) => setEditedUser({ ...editedUser, department_id: e.target.value })}
-                className="col-span-3"
-              />
+              <div className="col-span-3">
+                <Select
+                  value={editedUser.department_id}
+                  onValueChange={(val) =>
+                    setEditedUser({ ...editedUser, department_id: val })
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="-- Select department --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="points" className="text-right">
                 Points
@@ -542,14 +709,21 @@ export function UserTable() {
                 min="0"
                 value={editedUser.user_point}
                 onChange={(e) =>
-                  setEditedUser({ ...editedUser, user_point: e.target.value ? Number(e.target.value) : 0 })
+                  setEditedUser({
+                    ...editedUser,
+                    user_point: e.target.value ? Number(e.target.value) : 0,
+                  })
                 }
                 className="col-span-3"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)} disabled={isSubmitting}>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
             <Button onClick={handleSaveEdit} disabled={isSubmitting}>
@@ -571,49 +745,80 @@ export function UserTable() {
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>User Details</DialogTitle>
-            <DialogDescription>Detailed information about the user.</DialogDescription>
+            <DialogDescription>
+              Detailed information about the user.
+            </DialogDescription>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Name</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Name
+                  </h3>
                   <p className="text-base">{selectedUser.name}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Email
+                  </h3>
                   <p className="text-base">{selectedUser.email}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Department ID</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Department ID
+                  </h3>
                   <p className="text-base">{selectedUser.department_id}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Points</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Points
+                  </h3>
                   <p className="text-base">{selectedUser.user_point}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Firebase UID</h3>
-                  <p className="text-base break-all">{selectedUser.firebase_uid}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Firebase UID
+                  </h3>
+                  <p className="text-base break-all">
+                    {selectedUser.firebase_uid}
+                  </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">User ID</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    User ID
+                  </h3>
                   <p className="text-base">{selectedUser.id}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Created At</h3>
-                  <p className="text-base">{formatDate(selectedUser.createdAt)}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Created At
+                  </h3>
+                  <p className="text-base">
+                    {formatDate(selectedUser.createdAt)}
+                  </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Last Updated</h3>
-                  <p className="text-base">{formatDate(selectedUser.update_at)}</p>
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Last Updated
+                  </h3>
+                  <p className="text-base">
+                    {formatDate(selectedUser.update_at)}
+                  </p>
                 </div>
               </div>
-              {isNewUser(selectedUser.createdAt) && <Badge className="bg-green-500 hover:bg-green-600">New User</Badge>}
+              {isNewUser(selectedUser.createdAt) && (
+                <Badge className="bg-green-500 hover:bg-green-600">
+                  New User
+                </Badge>
+              )}
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => handleEditClick(selectedUser!)} className="mr-auto">
+            <Button
+              onClick={() => handleEditClick(selectedUser!)}
+              className="mr-auto"
+            >
               Edit User
             </Button>
             <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
@@ -627,14 +832,18 @@ export function UserTable() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this user?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Are you sure you want to delete this user?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the user account and remove their data from our
-              servers.
+              This action cannot be undone. This will permanently delete the
+              user account and remove their data from our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteUser}
               disabled={isSubmitting}
@@ -653,5 +862,5 @@ export function UserTable() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

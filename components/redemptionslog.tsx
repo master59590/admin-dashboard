@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   collection,
   getDocs,
+  getDoc,
   updateDoc,
   doc,
   query,
@@ -25,7 +26,19 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-
+import { RefreshCw } from "lucide-react";
+import { RewardCombobox } from "@/components/ui/RewardCombobox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
@@ -36,6 +49,7 @@ interface Redemption {
   coupon: string;
   user_id: string;
   reward_id: string;
+  reward_name?: string;
   points_used: number;
   status: string;
   created_at: Date;
@@ -48,6 +62,12 @@ export default function Redemption() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterRewardName, setFilterRewardName] = useState("all");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<{
+    id: string;
+    status: string;
+  } | null>(null);
 
   const fetchRedemptions = async () => {
     setLoading(true);
@@ -56,12 +76,36 @@ export default function Redemption() {
       orderBy("created_at", "desc")
     );
     const snap = await getDocs(q);
-    const list: Redemption[] = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...(doc.data() as any),
-      created_at: doc.data().created_at?.toDate?.() ?? new Date(),
-      updated_at: doc.data().updated_at?.toDate?.() ?? new Date(),
-    }));
+
+    const list: Redemption[] = await Promise.all(
+      snap.docs.map(async (docSnap): Promise<Redemption> => {
+        const data = docSnap.data();
+        const rewardId = data.reward_id;
+        let rewardName = "";
+
+        try {
+          const rewardDoc = await getDoc(doc(db, "products", rewardId));
+          rewardName = rewardDoc.exists()
+            ? rewardDoc.data().name
+            : "(ไม่พบชื่อ)";
+        } catch (err) {
+          rewardName = "(โหลดชื่อไม่ได้)";
+        }
+
+        return {
+          id: docSnap.id,
+          coupon: data.coupon ?? "",
+          user_id: data.user_id ?? "",
+          reward_id: rewardId,
+          reward_name: rewardName,
+          points_used: data.points_used ?? 0,
+          status: data.status ?? "",
+          created_at: data.created_at?.toDate?.() ?? new Date(),
+          updated_at: data.updated_at?.toDate?.() ?? new Date(),
+        };
+      })
+    );
+
     setRedemptions(list);
     setLoading(false);
   };
@@ -84,15 +128,19 @@ export default function Redemption() {
   }, [search]);
 
   const filtered = redemptions.filter((r) => {
-    const matchSearch =
-      r.user_id.includes(search) ||
-      r.reward_id.includes(search) ||
-      r.coupon.includes(search);
-
+    const matchSearch = r.user_id.includes(search);
     const matchStatus = filterStatus === "all" || r.status === filterStatus;
+    const matchReward =
+      filterRewardName === "all" || r.reward_name === filterRewardName;
 
-    return matchSearch && matchStatus;
+    return matchSearch && matchStatus && matchReward;
   });
+
+  const rewardNameOptions = Array.from(
+    new Set(redemptions.map((r) => r.reward_name ?? ""))
+  )
+    .filter((name) => name !== "")
+    .sort((a, b) => a.localeCompare(b));
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
@@ -104,14 +152,19 @@ export default function Redemption() {
   );
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-semibold mb-4">Redemption Management</h2>
       <div className="flex mb-4 gap-2 items-center">
         <Input
-          placeholder="Search by coupon, user_id, or reward_id"
+          placeholder="Search by user_id"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-1/3"
         />
+        <RewardCombobox
+          value={filterRewardName}
+          onChange={setFilterRewardName}
+          options={["all", ...rewardNameOptions]}
+        />
+
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-[160px]">
             <SelectValue />
@@ -123,6 +176,18 @@ export default function Redemption() {
             <SelectItem value="cancel">Cancelled</SelectItem>
           </SelectContent>
         </Select>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setSearch("");
+            setFilterStatus("all");
+            setFilterRewardName("all");
+          }}
+          className="flex gap-2 items-center"
+        >
+          <RefreshCw className="w-4 h-4" />
+          รีเซ็ตตัวกรอง
+        </Button>
       </div>
 
       {loading ? (
@@ -137,10 +202,11 @@ export default function Redemption() {
                 <TableHead>Coupon</TableHead>
                 <TableHead>User ID</TableHead>
                 <TableHead>Reward ID</TableHead>
+                <TableHead>Reward</TableHead>
                 <TableHead>Points Used</TableHead>
-                <TableHead>Status</TableHead>
+                {/* <TableHead>Status</TableHead> */}
                 <TableHead>Date</TableHead>
-                <TableHead></TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -149,17 +215,21 @@ export default function Redemption() {
                   <TableCell>{r.coupon}</TableCell>
                   <TableCell>{r.user_id}</TableCell>
                   <TableCell>{r.reward_id}</TableCell>
+                  <TableCell>{r.reward_name}</TableCell>
                   <TableCell>{r.points_used}</TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <span className="capitalize font-medium">{r.status}</span>
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>
                     {format(r.created_at, "yyyy-MM-dd HH:mm")}
                   </TableCell>
                   <TableCell>
                     <Button
                       size="sm"
-                      onClick={() => toggleStatus(r.id, r.status)}
+                      onClick={() => {
+                        setSelectedItem({ id: r.id, status: r.status });
+                        setConfirmOpen(true);
+                      }}
                       variant="outline"
                       disabled={["accept", "cancel"].includes(r.status)}
                       className={`border font-medium
@@ -207,6 +277,36 @@ export default function Redemption() {
           </Button>
         </div>
       </div>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการเปลี่ยนสถานะ</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณแน่ใจหรือไม่ที่จะเปลี่ยนสถานะรายการนี้?
+              การกระทำนี้ไม่สามารถย้อนกลับได้
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!selectedItem) return;
+                const { id, status } = selectedItem;
+                const newStatus = status === "packing" ? "accept" : "packing";
+                const ref = doc(db, "Redemptions", id);
+                await updateDoc(ref, {
+                  status: newStatus,
+                  updated_at: new Date(),
+                });
+                fetchRedemptions();
+                setSelectedItem(null);
+              }}
+            >
+              ยืนยัน
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

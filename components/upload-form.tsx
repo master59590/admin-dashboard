@@ -1,46 +1,61 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { collection, addDoc } from "firebase/firestore"
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { db, storage } from "@/lib/firebase"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Loader2, Upload } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-
+import type React from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  addDoc,
+} from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Loader2, Upload } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 export function UploadForm() {
-  const [name, setName] = useState("")
-  const [price, setPrice] = useState("")
-  const [editStock, setEditStock] = useState("")
-  const [description, setDescription] = useState("")
-  const [image, setImage] = useState<File | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const router = useRouter()
-  const { toast } = useToast()
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [editStock, setEditStock] = useState("");
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [ranks, setRanks] = useState<
+    { id: string; name: string; position: number }[]
+  >([]);
+  const [selectedRank, setSelectedRank] = useState(""); // ค่า default
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const router = useRouter();
+  const { toast } = useToast();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setImage(file)
+      const file = e.target.files[0];
+      setImage(file);
 
       // Create preview
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = (event) => {
-        setImagePreview(event.target?.result as string)
-      }
-      reader.readAsDataURL(file)
+        setImagePreview(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // Validate form inputs
     if (!name.trim()) {
@@ -48,8 +63,8 @@ export function UploadForm() {
         title: "Missing product name",
         description: "Please enter a product name",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     if (!price.trim() || isNaN(Number(price))) {
@@ -57,8 +72,26 @@ export function UploadForm() {
         title: "Invalid price",
         description: "Please enter a valid price",
         variant: "destructive",
-      })
-      return
+      });
+      return;
+    }
+
+    if (!editStock.trim() || isNaN(Number(editStock))) {
+      toast({
+        title: "Invalid stock",
+        description: "Please enter a valid stock number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedRank) {
+      toast({
+        title: "Missing rank",
+        description: "Please select a product rank",
+        variant: "destructive",
+      });
+      return;
     }
 
     // Description is optional, so no validation needed here
@@ -68,17 +101,18 @@ export function UploadForm() {
         title: "Missing image",
         description: "Please upload a product image",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
-      setLoading(true)
+      if (loading) return;
+      setLoading(true);
 
       // Upload image to Firebase Storage
-      const storageRef = ref(storage, `products/${Date.now()}_${image.name}`)
-      const uploadResult = await uploadBytes(storageRef, image)
-      const imageUrl = await getDownloadURL(uploadResult.ref)
+      const storageRef = ref(storage, `products/${Date.now()}_${image.name}`);
+      const uploadResult = await uploadBytes(storageRef, image);
+      const imageUrl = await getDownloadURL(uploadResult.ref);
       // const imageUrl = "https://via.placeholder.com/150" // Placeholder URL for testing
       // Add product to Firestore
       await addDoc(collection(db, "products"), {
@@ -87,36 +121,51 @@ export function UploadForm() {
         description,
         imageUrl,
         stock: Number.parseInt(editStock),
+        rank_id: selectedRank,
         createdAt: new Date(),
-      })
+      });
 
       toast({
         title: "Product added",
         description: "Your product has been successfully added",
-      })
+      });
 
       // Reset form
-      setName("")
-      setPrice("")
-      setEditStock("")
-      setDescription("")
-      setImage(null)
-      setImagePreview(null)
+      setName("");
+      setPrice("");
+      setEditStock("");
+      setDescription("");
+      setImage(null);
+      setImagePreview(null);
 
       // Redirect to dashboard
-      router.push("/")
-      router.refresh()
+      router.push("/");
+      router.refresh();
     } catch (error) {
-      console.error("Error adding product:", error)
+      console.error("Error adding product:", error);
       toast({
         title: "Error",
         description: "Failed to add product. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+  useEffect(() => {
+    const fetchRanks = async () => {
+      const q = query(collection(db, "Rank"), orderBy("position"));
+      const querySnapshot = await getDocs(q);
+      const rankData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+        position: doc.data().position,
+      }));
+      setRanks(rankData);
+    };
+
+    fetchRanks();
+  }, []);
 
   return (
     <Card>
@@ -159,6 +208,25 @@ export function UploadForm() {
               placeholder="0"
               disabled={loading}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="rank">Rank</Label>
+            <Select
+              value={selectedRank}
+              onValueChange={setSelectedRank}
+              disabled={loading}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select rank" />
+              </SelectTrigger>
+              <SelectContent>
+                {ranks.map((rank) => (
+                  <SelectItem key={rank.id} value={rank.id}>
+                    {rank.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -216,5 +284,5 @@ export function UploadForm() {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }
