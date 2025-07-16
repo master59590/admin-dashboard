@@ -1,6 +1,7 @@
 import React from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import Configs from "@/components/configpage";
+import { Configmodal } from "@/components/Modal/Configmodal";
 const page = () => {
   return (
     <div>
@@ -17,6 +18,9 @@ const page = () => {
               <li>แต้มที่ได้รับสูงสุดต่อวัน</li>
               <li>แต้มขยะตามประเภท</li>
             </ul>
+            <div className="mt-4">
+              <Configmodal />
+            </div>
           </div>
           <Configs></Configs>
         </div>

@@ -121,7 +121,8 @@ export function UploadForm() {
         description,
         imageUrl,
         stock: Number.parseInt(editStock),
-        rank_id: selectedRank,
+        rank: ranks.find((r) => r.id === selectedRank)?.name || "",
+        isPromotion: false,
         createdAt: new Date(),
       });
 

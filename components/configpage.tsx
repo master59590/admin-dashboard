@@ -23,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Defaultmodal } from "@/components/Modal/defaultmodal";
 
 interface Department {
   id: string;
@@ -47,6 +48,7 @@ interface WasteItem {
 export default function ConfigPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [wasteItems, setWasteItems] = useState<WasteItem[]>([]);
+  const [openGuide, setOpenGuide] = useState(false);
 
   const [newDept, setNewDept] = useState("");
   const [ranks, setRanks] = useState<Rank[]>([]);
@@ -231,6 +233,7 @@ export default function ConfigPage() {
               <Input
                 className="flex-1 min-w-[160px]"
                 value={r.name}
+                disabled
                 onChange={(e) => {
                   const updated = [...ranks];
                   updated[i].name = e.target.value;
@@ -369,8 +372,10 @@ export default function ConfigPage() {
       <Card className="mt-10">
         <CardHeader>
           <CardTitle>แต้มขยะตามประเภท</CardTitle>
-          <span>แต้ม default ?</span>
         </CardHeader>
+        <div className="mt-1 ml-7 mb-4">
+          <Defaultmodal />
+        </div>
         <CardContent className="space-y-4 text-left">
           {wasteItems.map((item, i) => (
             <div

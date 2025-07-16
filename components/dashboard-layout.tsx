@@ -18,6 +18,7 @@ import {
   Gift,
   ScrollText,
   SlidersHorizontal,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -68,6 +69,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       title: "Users",
       href: "/users",
       icon: Users,
+    },
+    {
+      title: "User Rank",
+      href: "/userrank",
+      icon: Trophy,
     },
   ];
 

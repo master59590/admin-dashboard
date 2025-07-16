@@ -1,6 +1,7 @@
 import React from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import Alllogs from "@/components/alllogs";
+import { Logmodal } from "@/components/Modal/Logmodal";
 const page = () => {
   return (
     <div>
@@ -14,6 +15,9 @@ const page = () => {
               <li>ประวัติการจัดการผู้ใช้</li>
               <li>ประวัติการจัดการของรางวัล</li>
             </ul>
+            <div className="mt-4">
+              <Logmodal />
+            </div>
           </div>
           <Alllogs></Alllogs>
         </div>
